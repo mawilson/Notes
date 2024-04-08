@@ -1,0 +1,5 @@
+.node_modules
+.events
+env.json
+.aws-sam
+buildspec.yml
