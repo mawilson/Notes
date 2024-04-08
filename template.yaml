@@ -1,0 +1,237 @@
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: Api
+      StageName: Prod
+      DefinitionBody:
+        openapi: '3.0'
+        info: {}
+        paths:
+          /notes/{id}:
+            delete:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${deleteNote.Arn}/invocations
+              responses: {}
+            put:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${putNote.Arn}/invocations
+              responses: {}
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getNote.Arn}/invocations
+              responses: {}
+          /notes:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${postNote.Arn}/invocations
+              responses: {}
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getNotes.Arn}/invocations
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Cors:
+        MaxAge: 5
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+        - preferred_username
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+  getNotes:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: getNotes
+      CodeUri: src/getNotes
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Events:
+        ApiGETnotes:
+          Type: Api
+          Properties:
+            Path: /notes
+            Method: GET
+            RestApiId: !Ref Api
+      Environment:
+        Variables:
+          NOTES_TABLE_NAME: !Ref Notes
+          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+  getNotesLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${getNotes}
+  getNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: getNote
+      CodeUri: src/get_note(id)
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          NOTES_TABLE_NAME: !Ref Notes
+          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+      Events:
+        ApiGETnotesid:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: GET
+            RestApiId: !Ref Api
+  getNoteLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${getNote}
+  postNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: postNote
+      CodeUri: src/post_note
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          NOTES_TABLE_NAME: !Ref Notes
+          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+      Events:
+        ApiPOSTnotes:
+          Type: Api
+          Properties:
+            Path: /notes
+            Method: POST
+            RestApiId: !Ref Api
+  postNoteLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${postNote}
+  putNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: putNote
+      CodeUri: src/put_note(id)
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          NOTES_TABLE_NAME: !Ref Notes
+          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+      Events:
+        ApiPUTnotesid:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: PUT
+            RestApiId: !Ref Api
+  putNoteLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${putNote}
+  deleteNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: deleteNote
+      CodeUri: src/delete_note(id)
+      Handler: handler.handler
+      Runtime: python3.11
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Notes
+      Environment:
+        Variables:
+          NOTES_TABLE_NAME: !Ref Notes
+          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+      Events:
+        ApiDELETEnotesid:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: DELETE
+            RestApiId: !Ref Api
+  deleteNoteLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${deleteNote}
+  Notes:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+Metadata:
+  AWS::Composer::Groups:
+    Group:
+      Label: Group
+      Members:
+        - getNotes
+        - postNote
+        - getNote
+        - putNote
+        - deleteNote
