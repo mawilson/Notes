@@ -1,6 +1,20 @@
 # Notes
 A simple AWS-based, serverless note-taking app
 
+## Architecture
+![application-composer-notes-app-v5 yaml_cropped2](https://github.com/mawilson/Notes/assets/2830497/af7be6ca-0361-4da2-92a5-77a19db43fa0)
+
+The fundamental components of the application are the API Gateway, the Lambda functions, the DynamoDB table, & Cognito.
+
+The API Gateway exposes the API endpoints, & specifies the Cognito UserPool as the authorizor for some of these endpoints.
+The lambda functions receive the requests from the API endpoints, & interact with the Dynamo DB table to get, add, update, or delete notes.
+The Dynamo DB table houses all of the notes.
+Cognito has several interlocking components:
+* NotesUserPool is the source of users allowed to interact with the API
+* NotesUserPoolClient specifies the way the API may interact with these users
+* NotesUserPoolResourceServer defines the Oauth scopes available for use
+* NotesUserPoolDomain specifies the Oauth domain at which the Cognito hosted UI lives at
+
 ## Installation
 The application leverages the AWS SAM CLI to build & deploy the appropriate AWS resources & roles. To use the AWS SAM CLI, follow these steps:
 [Install the AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
@@ -34,7 +48,7 @@ The API specifies the following endpoints:
   * does nothing if noteId not found
  
  The GET endpoints are unauthenticated.
- The POST, PUT, & DELETE endpoints all expect an OAUTH2 bearer token. This can be done via Postman following the instructions here: https://learning.postman.com/docs/sending-requests/authorization/oauth-20/
+ The POST, PUT, & DELETE endpoints all expect an OAUTH2 bearer token. This can be done via Postman following the instructions here: [Postman - Requesting an OAuth 2.0 Token](https://learning.postman.com/docs/sending-requests/authorization/oauth-20/)
   * Grant type: Authorization Code
   * Callback URL remains default (for browser testing)
   * Auth URL: https://notes-authority.auth.us-east-1.amazoncognito.com/oauth2/authorize
