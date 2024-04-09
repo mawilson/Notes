@@ -21,6 +21,19 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-NotesUserpool
       AutoVerifiedAttributes:
         - email
+  NotesUserPoolResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties: 
+      UserPoolId: !Ref NotesUserpool 
+      Identifier: "NotesUserPoolResourceServer" 
+      Name: "notesScopes" 
+      Scopes: 
+      - ScopeName: "put" 
+        ScopeDescription: "for PUTs" 
+      - ScopeName: "post"
+        ScopeDescription: "for POSTs"
+      - ScopeName: "delete"
+        ScopeDescription: "for DELETEs"
   NotesApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -31,8 +44,10 @@ Resources:
               Fn::GetAtt:
                 - NotesUserpool
                 - Arn
-          # NotesUserpool:
-          #   FunctionArn: !GetAtt NotesUserpool.Arn
+            AuthorizationScopes:
+              - put
+              - post
+              - delete
         DefaultAuthorizer: NotesCognitoAuth
       StageName: Prod
 
@@ -213,6 +228,20 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref NotesUserpool
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - openid
+        - aws.cognito.signin.user.admin
+        - NotesUserPoolResourceServer/put
+        - NotesUserPoolResourceServer/post
+        - NotesUserPoolResourceServer/delete
+      CallbackURLs:
+        - https://oauth.pstmn.io/v1/browser-callback
+      SupportedIdentityProviders:
+        - COGNITO
+      AllowedOAuthFlows: 
+        - code
+
   NotesUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
