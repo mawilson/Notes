@@ -34,17 +34,17 @@ export const putNoteHandler = async (event) => {
         Item: { id : id, name: name }
     };
 
+    let response = {};
     try {
         const data = await ddbDocClient.send(new PutCommand(params));
-        console.log("Success - item added or updated", data);
+        //console.log("Success - item added or updated", data);
+        response.statusCode = 200;
+        response.body = JSON.stringify(data);
     } catch (err) {
-        console.log("Error", err.stack);
+        //console.log("Error", err.stack);
+        response.statusCode = 500;
+        response.body = JSON.stringify(err.stack);
     }
-
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify(body)
-    };
 
     // All log statements are written to CloudWatch
     console.info(`response from: ${event.path} statusCode: ${response.statusCode} body: ${response.body}`);
