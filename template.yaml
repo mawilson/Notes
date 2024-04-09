@@ -93,7 +93,7 @@ Resources:
             Method: PUT
 
   # This is a Lambda function config associated with the source code: postNote.mjs
-  putNote:
+  postNote:
     Type: AWS::Serverless::Function
     Properties:
       Handler: src/handlers/postNote.postNoteHandler

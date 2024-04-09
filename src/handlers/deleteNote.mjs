@@ -10,7 +10,7 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 const tableName = process.env.TABLE_NAME;
 
 /**
- * A simple example includes a HTTP post method to delete one item to a DynamoDB table.
+ * A simple example includes a HTTP post method to delete one item from a DynamoDB table.
  */
 export const deleteNoteHandler = async (event) => {
     if (event.httpMethod !== 'DELETE') {

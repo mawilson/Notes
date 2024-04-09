@@ -10,7 +10,7 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 const tableName = process.env.TABLE_NAME;
 
 /**
- * A simple example includes a HTTP post method to add one item to a DynamoDB table.
+ * A simple example includes a HTTP put method to update one item in a DynamoDB table.
  */
 export const putNoteHandler = async (event) => {
     if (event.httpMethod !== 'PUT') {
