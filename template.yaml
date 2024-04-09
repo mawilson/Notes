@@ -81,28 +81,11 @@ Resources:
         # Give Create/Read/Update/Delete Permissions to the NotesTable
       - DynamoDBCrudPolicy:
           TableName: !Ref NotesTable
-      - Statement:
-            - Effect: Allow
-              Action:
-                - cognito-idp:Admin*
-                - cognito-idp:DescribeIdentityProvider
-                - cognito-idp:DescribeResourceServer
-                - cognito-idp:DescribeUserPool
-                - cognito-idp:DescribeUserPoolClient
-                - cognito-idp:DescribeUserPoolDomain
-                - cognito-idp:GetGroup
-                - cognito-idp:ListGroups
-                - cognito-idp:ListUserPoolClients
-                - cognito-idp:ListUsers
-                - cognito-idp:ListUsersInGroup
-                - cognito-idp:UpdateGroup
-              Resource: !GetAtt NotesUserpool.Arn
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
-          NOTESUSERPOOL_USER_POOL_ID: !Ref NotesUserpool
-          NOTESUSERPOOL_USER_POOL_ARN: !GetAtt NotesUserpool.Arn
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
@@ -125,28 +108,11 @@ Resources:
         # Give Create/Read/Update/Delete Permissions to the NotesTable
       - DynamoDBCrudPolicy:
           TableName: !Ref NotesTable
-      - Statement:
-            - Effect: Allow
-              Action:
-                - cognito-idp:Admin*
-                - cognito-idp:DescribeIdentityProvider
-                - cognito-idp:DescribeResourceServer
-                - cognito-idp:DescribeUserPool
-                - cognito-idp:DescribeUserPoolClient
-                - cognito-idp:DescribeUserPoolDomain
-                - cognito-idp:GetGroup
-                - cognito-idp:ListGroups
-                - cognito-idp:ListUserPoolClients
-                - cognito-idp:ListUsers
-                - cognito-idp:ListUsersInGroup
-                - cognito-idp:UpdateGroup
-              Resource: !GetAtt NotesUserpool.Arn
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
-          NOTESUSERPOOL_USER_POOL_ID: !Ref NotesUserpool
-          NOTESUSERPOOL_USER_POOL_ARN: !GetAtt NotesUserpool.Arn
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
@@ -169,28 +135,11 @@ Resources:
         # Give Create/Read/Update/Delete Permissions to the NotesTable
       - DynamoDBCrudPolicy:
           TableName: !Ref NotesTable
-      - Statement:
-            - Effect: Allow
-              Action:
-                - cognito-idp:Admin*
-                - cognito-idp:DescribeIdentityProvider
-                - cognito-idp:DescribeResourceServer
-                - cognito-idp:DescribeUserPool
-                - cognito-idp:DescribeUserPoolClient
-                - cognito-idp:DescribeUserPoolDomain
-                - cognito-idp:GetGroup
-                - cognito-idp:ListGroups
-                - cognito-idp:ListUserPoolClients
-                - cognito-idp:ListUsers
-                - cognito-idp:ListUsersInGroup
-                - cognito-idp:UpdateGroup
-              Resource: !GetAtt NotesUserpool.Arn
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
-          NOTESUSERPOOL_USER_POOL_ID: !Ref NotesUserpool
-          NOTESUSERPOOL_USER_POOL_ARN: !GetAtt NotesUserpool.Arn
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
@@ -211,7 +160,6 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 2
         WriteCapacityUnits: 2
-
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -236,6 +184,16 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-NotesUserpool
       AutoVerifiedAttributes:
         - email
+  NotesUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref NotesUserpool
+  NotesUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref NotesUserpool
+      Domain: notes-authority
+
 Outputs:
   WebEndpoint:
     Description: API Gateway endpoint URL for Prod stage

@@ -37,6 +37,8 @@ export const postNoteHandler = async (event) => {
         const data = await ddbDocClient.send(new PutCommand(params));
         //console.log("Success - item added or updated", data);
         response.statusCode = 200;
+        data.id = id
+        data.name = name
         response.body = JSON.stringify(data);
     } catch (err) {
         //console.log("Error", err.stack);
