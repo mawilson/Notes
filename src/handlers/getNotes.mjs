@@ -7,14 +7,14 @@ const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 // Get the DynamoDB table name from environment variables
-const tableName = process.env.SAMPLE_TABLE;
+const tableName = process.env.TABLE_NAME;
 
 /**
  * A simple example includes a HTTP get method to get all items from a DynamoDB table.
  */
-export const getAllItemsHandler = async (event) => {
+export const getNotesHandler = async (event) => {
     if (event.httpMethod !== 'GET') {
-        throw new Error(`getAllItems only accept GET method, you tried: ${event.httpMethod}`);
+        throw new Error(`getAllNotes only accept GET method, you tried: ${event.httpMethod}`);
     }
     // All log statements are written to CloudWatch
     console.info('received:', event);

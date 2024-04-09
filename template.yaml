@@ -1,237 +1,186 @@
-Transform: AWS::Serverless-2016-10-31
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  notes-app
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Sub
-        - ${ResourceName} From Stack ${AWS::StackName}
-        - ResourceName: Api
-      StageName: Prod
-      DefinitionBody:
-        openapi: '3.0'
-        info: {}
-        paths:
-          /notes/{id}:
-            delete:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${deleteNote.Arn}/invocations
-              responses: {}
-            put:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${putNote.Arn}/invocations
-              responses: {}
-            get:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getNote.Arn}/invocations
-              responses: {}
-          /notes:
-            post:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${postNote.Arn}/invocations
-              responses: {}
-            get:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getNotes.Arn}/invocations
-              responses: {}
-      EndpointConfiguration: REGIONAL
-      TracingEnabled: true
-      Cors:
-        MaxAge: 5
-  UserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: false
-      AliasAttributes:
-        - email
-        - preferred_username
-      UserPoolName: !Sub ${AWS::StackName}-UserPool
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: getNotes.mjs
   getNotes:
     Type: AWS::Serverless::Function
     Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: getNotes
-      CodeUri: src/getNotes
-      Handler: handler.handler
-      Runtime: python3.11
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Events:
-        ApiGETnotes:
-          Type: Api
-          Properties:
-            Path: /notes
-            Method: GET
-            RestApiId: !Ref Api
+      Handler: src/handlers/getNotes.getNotesHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Does an HTTP GET on the root endpoint to get all notes the NoteTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the NotesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NotesTable
       Environment:
         Variables:
-          NOTES_TABLE_NAME: !Ref Notes
-          NOTES_TABLE_ARN: !GetAtt Notes.Arn
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
-  getNotesLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${getNotes}
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAME: !Ref NotesTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: getNote.mjs
   getNote:
     Type: AWS::Serverless::Function
     Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: getNote
-      CodeUri: src/get_note(id)
-      Handler: handler.handler
-      Runtime: python3.11
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
+      Handler: src/handlers/getNote.getNoteHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Does an HTTP GET on the /{id} endpoint to get a single note from the NoteTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the NotesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NotesTable
       Environment:
         Variables:
-          NOTES_TABLE_NAME: !Ref Notes
-          NOTES_TABLE_ARN: !GetAtt Notes.Arn
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAME: !Ref NotesTable
       Events:
-        ApiGETnotesid:
+        Api:
           Type: Api
           Properties:
-            Path: /notes/{id}
+            Path: /{id}
             Method: GET
-            RestApiId: !Ref Api
-  getNoteLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${getNote}
-  postNote:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: postNote
-      CodeUri: src/post_note
-      Handler: handler.handler
-      Runtime: python3.11
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Environment:
-        Variables:
-          NOTES_TABLE_NAME: !Ref Notes
-          NOTES_TABLE_ARN: !GetAtt Notes.Arn
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
-      Events:
-        ApiPOSTnotes:
-          Type: Api
-          Properties:
-            Path: /notes
-            Method: POST
-            RestApiId: !Ref Api
-  postNoteLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${postNote}
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: putNote.mjs
   putNote:
     Type: AWS::Serverless::Function
     Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: putNote
-      CodeUri: src/put_note(id)
-      Handler: handler.handler
-      Runtime: python3.11
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
+      Handler: src/handlers/putNote.putNoteHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Does an HTTP PUT on the /{id} endpoint to update a matching note in the NoteTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the NotesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NotesTable
       Environment:
         Variables:
-          NOTES_TABLE_NAME: !Ref Notes
-          NOTES_TABLE_ARN: !GetAtt Notes.Arn
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAME: !Ref NotesTable
       Events:
-        ApiPUTnotesid:
+        Api:
           Type: Api
           Properties:
-            Path: /notes/{id}
+            Path: /{id}
             Method: PUT
-            RestApiId: !Ref Api
-  putNoteLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
+
+  # This is a Lambda function config associated with the source code: postNote.mjs
+  putNote:
+    Type: AWS::Serverless::Function
     Properties:
-      LogGroupName: !Sub /aws/lambda/${putNote}
+      Handler: src/handlers/postNote.postNoteHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Does an HTTP POST on the root endpoint to add a note to the NoteTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the NotesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NotesTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAME: !Ref NotesTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: deleteNote.mjs
   deleteNote:
     Type: AWS::Serverless::Function
     Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: deleteNote
-      CodeUri: src/delete_note(id)
-      Handler: handler.handler
-      Runtime: python3.11
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
+      Handler: src/handlers/deleteNote.deleteNoteHandler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Does an HTTP DELETE on the /{id} endpoint to delete a matching note from the NoteTable
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Notes
+        # Give Create/Read/Update/Delete Permissions to the NotesTable
+      - DynamoDBCrudPolicy:
+          TableName: !Ref NotesTable
       Environment:
         Variables:
-          NOTES_TABLE_NAME: !Ref Notes
-          NOTES_TABLE_ARN: !GetAtt Notes.Arn
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAME: !Ref NotesTable
       Events:
-        ApiDELETEnotesid:
+        Api:
           Type: Api
           Properties:
-            Path: /notes/{id}
+            Path: /{id}
             Method: DELETE
-            RestApiId: !Ref Api
-  deleteNoteLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
+  NotesTable:
+    Type: AWS::Serverless::SimpleTable
     Properties:
-      LogGroupName: !Sub /aws/lambda/${deleteNote}
-  Notes:
-    Type: AWS::DynamoDB::Table
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
     Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      BillingMode: PAY_PER_REQUEST
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
-Metadata:
-  AWS::Composer::Groups:
-    Group:
-      Label: Group
-      Members:
-        - getNotes
-        - postNote
-        - getNote
-        - putNote
-        - deleteNote
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+# # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
