@@ -33,7 +33,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /
+            Path: /notes
             Method: GET
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -61,7 +61,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /{id}
+            Path: /notes/{id}
             Method: GET
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -85,11 +85,12 @@ Resources:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
           Properties:
-            Path: /{id}
+            Path: /notes/{id}
             Method: PUT
 
   # This is a Lambda function config associated with the source code: postNote.mjs
@@ -111,11 +112,12 @@ Resources:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
           Properties:
-            Path: /
+            Path: /notes
             Method: POST
 
   # This is a Lambda function config associated with the source code: deleteNote.mjs
@@ -137,11 +139,12 @@ Resources:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE_NAME: !Ref NotesTable
+          NOTESUSERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref NotesUserPoolClient
       Events:
         Api:
           Type: Api
           Properties:
-            Path: /{id}
+            Path: /notes/{id}
             Method: DELETE
 
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
@@ -157,7 +160,6 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 2
         WriteCapacityUnits: 2
-
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -171,6 +173,27 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
+  NotesUserpool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+        - preferred_username
+      UserPoolName: !Sub ${AWS::StackName}-NotesUserpool
+      AutoVerifiedAttributes:
+        - email
+  NotesUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref NotesUserpool
+  NotesUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref NotesUserpool
+      Domain: notes-authority
+
 Outputs:
   WebEndpoint:
     Description: API Gateway endpoint URL for Prod stage

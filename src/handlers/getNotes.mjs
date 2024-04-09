@@ -26,17 +26,17 @@ export const getNotesHandler = async (event) => {
         TableName : tableName
     };
 
+    let response = {};
     try {
         const data = await ddbDocClient.send(new ScanCommand(params));
         var items = data.Items;
+        response.statusCode = 200;
+        response.body = JSON.stringify(items);
     } catch (err) {
-        console.log("Error", err);
+        //console.log("Error", err.stack);
+        response.statusCode = 500;
+        response.body = JSON.stringify(err.stack);
     }
-
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify(items)
-    };
 
     // All log statements are written to CloudWatch
     console.info(`response from: ${event.path} statusCode: ${response.statusCode} body: ${response.body}`);
