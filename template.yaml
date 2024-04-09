@@ -10,6 +10,32 @@ Resources:
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
+  NotesUserpool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+        - preferred_username
+      UserPoolName: !Sub ${AWS::StackName}-NotesUserpool
+      AutoVerifiedAttributes:
+        - email
+  NotesApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Auth:
+        Authorizers:
+          NotesCognitoAuth:
+            UserPoolArn:
+              Fn::GetAtt:
+                - NotesUserpool
+                - Arn
+          # NotesUserpool:
+          #   FunctionArn: !GetAtt NotesUserpool.Arn
+        DefaultAuthorizer: NotesCognitoAuth
+      StageName: Prod
+
   # This is a Lambda function config associated with the source code: getNotes.mjs
   getNotes:
     Type: AWS::Serverless::Function
@@ -33,8 +59,11 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref NotesApi
             Path: /notes
             Method: GET
+            Auth:
+              Authorizer: NONE
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
@@ -61,8 +90,11 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref NotesApi
             Path: /notes/{id}
             Method: GET
+            Auth:
+              Authorizer: NONE
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
@@ -90,6 +122,7 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref NotesApi
             Path: /notes/{id}
             Method: PUT
 
@@ -117,6 +150,7 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref NotesApi
             Path: /notes
             Method: POST
 
@@ -144,6 +178,7 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref NotesApi
             Path: /notes/{id}
             Method: DELETE
 
@@ -173,17 +208,7 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
-  NotesUserpool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: false
-      AliasAttributes:
-        - email
-        - preferred_username
-      UserPoolName: !Sub ${AWS::StackName}-NotesUserpool
-      AutoVerifiedAttributes:
-        - email
+
   NotesUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
@@ -197,7 +222,7 @@ Resources:
 Outputs:
   WebEndpoint:
     Description: API Gateway endpoint URL for Prod stage
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${NotesApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
 # # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
