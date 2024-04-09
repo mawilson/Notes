@@ -1,0 +1,6 @@
+node_modules
+package-lock.json
+.events
+env.json
+.aws-sam
+buildspec.yml
