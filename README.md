@@ -22,9 +22,8 @@ The API specifies the following endpoints:
   * returns nothing if not found
 * POST /
   * requires a JSON body with the following attributes defined
-    * id: unique identifier string
     * name: content of the note
-  * creates a new note with an ID of the body ID & note contents of the body name
+  * creates a new note with note contents of the body name
 * PUT /{noteId}
   * requires a JSON body with the following attributes defined
     * name: note contents
