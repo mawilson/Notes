@@ -45,9 +45,7 @@ Resources:
                 - NotesUserpool
                 - Arn
             AuthorizationScopes:
-              - put
-              - post
-              - delete
+              - openid
         DefaultAuthorizer: NotesCognitoAuth
       StageName: Prod
 
